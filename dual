@@ -1,0 +1,361 @@
+1.	class Dual:  
+2.	    def __init__ (self, c, A, b):  
+3.	        self.c = c # Вектор правой части системы ограничений  
+4.	        self.A = A # Матрица системы ограничений  
+5.	        self.b = b # Вектор коэффициентов целевой функции F  
+6.	  
+7.	        self.other = ["-", "Z", "b"]  
+8.	        self.basicVariables = ["v6", "v7", "v8", "v9"]   
+9.	        self.u = ["v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8", "v9"]  
+10.	  
+11.	        self.numberOfFreeVariables = len(self.c) # Количество свободных переменных  
+12.	        self.numberOfBasicVariables = len(self.A) # Количеество базисных переменных  
+13.	        self.numberOfVariables = self.numberOfFreeVariables + self.numberOfBasicVariables # Количество всех переменных  
+14.	  
+15.	        # Следующий блок кода инициализирует все строки симплекс-таблицы, которые позже будут добавлены в двумерный список, представляющий, собственно,   
+16.	        # всю симплекс-таблицу  
+17.	        #  
+18.	        # string - cписок, хранящий элементы самой верхней строки симплекс-таблицы. В вычислениях не участвует, используется для визуализации  
+19.	        # firstBasicVariable - список, хранящий элементы строки первой базисной переменной. Нулевой элемент этого списка используется для визуализации  
+20.	        # secondBasicVariable - -//- второй базисной переменной -//-  
+21.	        # thirdBasicVariable - -//- третьей базисной переменной -//-  
+22.	        # F - список, хранящий элементы последней строки симплек-таблицы  
+23.	  
+24.	        self.SimplexTableau = []  
+25.	  
+26.	        self.string = []  
+27.	        self.string.append(self.other[0])  
+28.	        for index in range (self.numberOfVariables):  
+29.	            self.string.append(self.u[index])  
+30.	        self.string.append(self.other[2])  
+31.	        self.SimplexTableau.append(self.string)  
+32.	  
+33.	        for i in range(self.numberOfBasicVariables):  
+34.	            self.basicVariable = []  
+35.	            self.basicVariable.append(self.basicVariables[i])  
+36.	            for j in range(self.numberOfFreeVariables + 1):  
+37.	                self.basicVariable.append(A[i][j])  
+38.	            for element in range(self.numberOfBasicVariables - 1):  
+39.	                if(element == i):  
+40.	                    self.basicVariable.append(1.0)  
+41.	                else:  
+42.	                    self.basicVariable.append(0.0)  
+43.	            self.basicVariable.append(self.b[i])  
+44.	            self.SimplexTableau.append(self.basicVariable)  
+45.	  
+46.	  
+47.	        self.F = []  
+48.	        self.F.append(self.other[1])  
+49.	        for index in self.c:  
+50.	            self.F.append(index)  
+51.	        for index in range(self.numberOfBasicVariables + 1):  
+52.	            self.F.append(0.0)  
+53.	        self.SimplexTableau.append(self.F)  
+54.	  
+55.	  
+56.	    # printSimplexTableau - функция, выводящая симплекс таблицу   
+57.	    #  
+58.	    # Поскольку строки и числа выводятся по разным правилам, в обоих циклах мы проверяем, чему равен итератор  цикла. Если в родительском цикле итератор   
+59.	    # цикла равен нулю, это значит, что выводится первая строка симплекс-таблицы. Тип данных всех ее элементов - string, поэтому мы выводим их, как string,   
+60.	    # а затем переходим к следующей итерации родительского цикла   
+61.	    #  
+62.	    # Далее, если во вложенном цикле итератор равен нулю, это значит, что выводится первый элементы строки. Поскольку для всех строк первый элемент   
+63.	    # используется для визуализации и имеет тип данных string, мы выводим его, как string. Затем программа переходит к следующей итерации вложенного цикла,   
+64.	    # выводит все следующие элементы данной строки как числа, при этом округляя, а затем переходит к следующей итерации родительского цикла. И так далее,  
+65.	    # пока не будет выведена вся симплекс-таблица  
+66.	  
+67.	  
+68.	    def printSimplexTableau (self):   
+69.	        for index in range(len(self.SimplexTableau)):  
+70.	            if(index == 0):   
+71.	                for string in range(len(self.SimplexTableau[index])):  
+72.	                    print(("%7s" % (self.SimplexTableau[index][string])), end ="")  
+73.	                print("\n")  
+74.	                continue  
+75.	  
+76.	            for element in range(len(self.SimplexTableau[index])):  
+77.	                if(element == 0):  
+78.	                    print(("%7s" % (self.SimplexTableau[index][element])), end ="")  
+79.	                    continue  
+80.	                print(( "%7s" % round(self.SimplexTableau[index][element], 2)), end ="")  
+81.	            print("\n")  
+82.	  
+83.	  
+84.	  
+85.	    # printLinearProblem - функция, выводящая решаемую задачу  
+86.	  
+87.	    def printLinearProblem (self):  
+88.	  
+89.	        # Вывод постановки задачи  
+90.	  
+91.	        print("\n     Z = ", end="")  
+92.	        for j in range (self.numberOfFreeVariables):  
+93.	            if(j == self.numberOfFreeVariables):  
+94.	                print(self.c[j], "*", self.u[j], end="")  
+95.	                break  
+96.	            print(self.c[j], "*", self.u[j], end=" + ")  
+97.	        print(self.c[self.numberOfFreeVariables - 1],"*", self.u[self.numberOfFreeVariables], " -> max")  
+98.	  
+99.	        # Вывод системы ограничений  
+100.	  
+101.	        for i in range (self.numberOfBasicVariables):  
+102.	            print("     ", end="")  
+103.	            for j in range (self.numberOfFreeVariables):  
+104.	                print(self.A[i][j], "*", self.u[j], "+", end=" ")  
+105.	            print(self.A[i][self.numberOfFreeVariables], "*", self.u[self.numberOfFreeVariables], "<=",self.b[i])  
+106.	          
+107.	        # Вывод системы ограничений с веденными фиктивными переменными  
+108.	  
+109.	        print("     ", end="")  
+110.	        for i in range(self.numberOfFreeVariables):  
+111.	            print(self.u[i], end=", ")  
+112.	        print (self.u[self.numberOfFreeVariables],">= 0 \n")  
+113.	  
+114.	        print("     Введем фиктивные переменные ", end="")  
+115.	        for index in range(self.numberOfBasicVariables - 1):  
+116.	            print(self.basicVariables[index], ",", end=" ")  
+117.	        print(self. basicVariables[self.numberOfBasicVariables - 1], ":\n")  
+118.	  
+119.	  
+120.	        print("     Z = - ( ", end="")  
+121.	        for j in range (self.numberOfFreeVariables):  
+122.	            if(j == self.numberOfFreeVariables):  
+123.	                print(self.c[j], "*", self.u[j], end="")  
+124.	                break  
+125.	            print(self.c[j], "*", self.u[j], end=" + ")  
+126.	  
+127.	        print(self.c[self.numberOfFreeVariables - 1],"*", self.u[self.numberOfFreeVariables], ") -> min")  
+128.	  
+129.	        for i in range (self.numberOfBasicVariables):  
+130.	            print("     ", end="")  
+131.	            for j in range (self.numberOfFreeVariables):  
+132.	                print(self.A[i][j], "*", self.u[j], "+", end=" ")  
+133.	            print(self.A[i][self.numberOfFreeVariables], "*", self.u[self.numberOfFreeVariables], "+ 1.0 *", self.basicVariables[i], "=", self.b[i])  
+134.	  
+135.	  
+136.	        print("     ", end="")  
+137.	        for i in range(self.numberOfVariables):  
+138.	            print(self.u[i], end=", ")  
+139.	        print (self.u[self.numberOfVariables], ">= 0 \n")  
+140.	  
+141.	  
+142.	  
+143.	  
+144.	    # isBasic - функция, проверяющая, является ли решение, найденное на этом этапе, опорным. Если нет - функция возвращает нуль, иначе - единицу  
+145.	  
+146.	    def isBasic(self):  
+147.	        for index in range(1, len(self.SimplexTableau) - 1):  
+148.	            if(self.SimplexTableau[index][self.numberOfVariables + 1] < 0):  
+149.	                return 0  
+150.	        return 1  
+151.	  
+152.	  
+153.	  
+154.	    # isOptimal - функция, проверяющая, является ли решение, найденное на этом этапе, оптимальным. Если нет - функция возвращает нуль, иначе - единицу, после чего программа  
+155.	    # закончит свое выполнения  
+156.	  
+157.	    def isOptimal(self):  
+158.	        for index in range(1, len(self.SimplexTableau[4]) - 1):  
+159.	            if(self.SimplexTableau[self.numberOfBasicVariables + 1][index] > 0):  
+160.	                return 0  
+161.	        return 1  
+162.	  
+163.	  
+164.	  
+165.	    # findResolvingColumn - функция нахождения разрешающего столбца. flag - переменная, указывающая, для чего мы ищем разрешающий элемент - для нахождения опорного (в   
+166.	    # случае, когда функция была вызвана с аругментом, равным нулю) или оптимального решения ( --//--, равным единице). В зависимости от этого алгоритмы нахождения  
+167.	    # разрешающего столбца будут разными  
+168.	  
+169.	    def findResolvingColumn (self, flag):  
+170.	  
+171.	        if(flag == 0):  
+172.	  
+173.	            # Проходимся по столбцу свободных членов симплекс-таблицы и добавляем все отрицательные элементы в список listOfIndices  
+174.	  
+175.	            listOfIndices = []   
+176.	            for index in range(1, len(self.SimplexTableau) - 1):  
+177.	                if (self.SimplexTableau[index][self.numberOfVariables + 1] < 0):  
+178.	                    listOfIndices.append(index);  
+179.	  
+180.	            # Далее зададим начальное значение минимального элемента равным нулю, а индекс - единице  
+181.	  
+182.	            minimalElement = 0  
+183.	            indexOfString = 1  
+184.	  
+185.	            # Проходим по списку listOfIndices и находим минимальный элемент  
+186.	              
+187.	            for index in listOfIndices:   
+188.	                if (self.SimplexTableau[index][self.numberOfVariables + 1] <= minimalElement):  
+189.	                    minimalElement = self.SimplexTableau[index][self.numberOfVariables + 1]  
+190.	                    indexOfString = index  
+191.	  
+192.	            indexOfResolvingColumn = 0  
+193.	  
+194.	            # Проходим по строке с индексом indexOfString и ищем первый отрицательный элемент. Столбец, в котором находится этот элемент и будет разрешающим  
+195.	  
+196.	            for index in range(1, len(self.SimplexTableau[indexOfString]) - 1):  
+197.	                if(self.SimplexTableau[indexOfString][len(self.SimplexTableau[indexOfString]) - 1 - index] < 0):  
+198.	                    indexOfResolvingColumn = len(self.SimplexTableau[indexOfString]) - 1 -index  
+199.	                    break  
+200.	            #Возвращаем индекс разрешающего столбца  
+201.	  
+202.	            return indexOfResolvingColumn   
+203.	  
+204.	        if(flag == 1):  
+205.	  
+206.	        # Проходимся по последней строке симплекс-таблицы и добавляем все положительные элементы в список listOfIndices  
+207.	  
+208.	            listOfIndices = []   
+209.	            for index in range(1, len(self.SimplexTableau[self.numberOfBasicVariables]) - 1):  
+210.	                if (self.SimplexTableau[self.numberOfBasicVariables + 1][index] > 0):   
+211.	                    listOfIndices.append(index);  
+212.	  
+213.	            # Далее зададим начальное значение максимального элемента равным нулю, а индекс - единице  
+214.	  
+215.	            maximalElement = 0  
+216.	            indexOfResolvingColumn = 1  
+217.	  
+218.	            # Проходим по списку listOfIndices и находим максимальный элемент  
+219.	              
+220.	            for index in listOfIndices:   
+221.	                if (self.SimplexTableau[self.numberOfBasicVariables + 1][index] > maximalElement):  
+222.	                    minimalElement = self.SimplexTableau[self.numberOfBasicVariables + 1][index]  
+223.	                    indexOfResolvingColumn = index  
+224.	  
+225.	            # Возвращаем индекс разрешающего столбца  
+226.	  
+227.	            return indexOfResolvingColumn   
+228.	          
+229.	  
+230.	  
+231.	    # findResolvingString - функция нахождения разрешающей строки, использующая найденный ранее разрешающий столбец  
+232.	  
+233.	    def findResolvingString (self, indexOfResolvingColumn):  
+234.	  
+235.	        # listOfIndices - список, в который мы положим индексы тех строк, значения элементов разрешающего столбца которых не равны нулю. Это нужно для того,   
+236.	        # чтобы избежать деления на ноль   
+237.	        #  
+238.	        # listOfValues - список,в который мы положим значения b/a для каждой строки, где a - элемент разрешающего столбца, а b - элемент столбца свободных   
+239.	        # членов  
+240.	  
+241.	        listOfIndices = []  
+242.	        listOfValues = []  
+243.	  
+244.	        # Заполняем списки listOfIndices и listOfValues   
+245.	  
+246.	        for index in range(1, len(self.SimplexTableau) - 1):  
+247.	            if (self.SimplexTableau[index][indexOfResolvingColumn] != 0):   
+248.	                listOfIndices.append(index)  
+249.	  
+250.	        for index in listOfIndices:  
+251.	            value = self.SimplexTableau[index][self.numberOfVariables + 1] / self.SimplexTableau[index][indexOfResolvingColumn]  
+252.	            if(value >= 0):  
+253.	                listOfValues.append(value)  
+254.	  
+255.	        # В данном блоке найдем начальное минимальное значение частного b/a. Для этого пробежимся по всем строкам, и как только частное в какой-то строке   
+256.	        # будет положительным - запишем его в минимальное значение, а затем выйдем из цикла  
+257.	  
+258.	        for index in listOfIndices:  
+259.	            currentValue = self.SimplexTableau[index][self.numberOfVariables + 1] / self.SimplexTableau[index][indexOfResolvingColumn]  
+260.	            if (currentValue >= 0):  
+261.	                minimalValue = currentValue  
+262.	                break  
+263.	  
+264.	        # Находим минимальное положительное из всех частных, а также записываем его индекс - этот индекс и будет индексом разрешающей строки  
+265.	  
+266.	        for index in listOfIndices:   
+267.	            currentValue = self.SimplexTableau[index][self.numberOfVariables + 1] / self.SimplexTableau[index][indexOfResolvingColumn]  
+268.	            if ((currentValue <= minimalValue) & (currentValue >= 0)):  
+269.	                minimalValue = currentValue   
+270.	                indexOfResolvingString = index  
+271.	  
+272.	        # Возвращаем индекс разрешающей строки  
+273.	  
+274.	        return indexOfResolvingString  
+275.	  
+276.	  
+277.	  
+278.	    # findResolvingElement - функция нахождения разрешающего элемента. flag - переменная, указывающая, для чего мы ищем разрешающий элемент - для нахождения опорного или   
+279.	    # оптимального решения. Поскольку от этого зависит только нахождение разрешающего столбца, с аргументом flag вызывается только функция findResolvingColumn  
+280.	  
+281.	    def findResolvingElement(self, flag):  
+282.	        resolvingColumn = self.findResolvingColumn(flag)  
+283.	        resolvingString = self.findResolvingString(resolvingColumn)  
+284.	  
+285.	        print("     Разрешающий столбец:", resolvingColumn, "\n")  
+286.	        print("     Разрешающая строка:", resolvingString, "\n")  
+287.	  
+288.	        return [resolvingString, resolvingColumn]  
+289.	  
+290.	  
+291.	  
+292.	    # tableConversion - функция преобразования симплекс-таблицы  
+293.	  
+294.	    def tableConversion(self, resolvingElement):  
+295.	        indexOfResolvingString = resolvingElement[0]  
+296.	        indexOfResolvingColumn = resolvingElement[1]  
+297.	          
+298.	        # Преобразуем разрешающую строку, выводим результат  
+299.	  
+300.	        denominator = self.SimplexTableau[indexOfResolvingString][indexOfResolvingColumn]  
+301.	        for index in range(1, len(self.SimplexTableau[indexOfResolvingString])):  
+302.	            self.SimplexTableau[indexOfResolvingString][index] /= denominator  
+303.	  
+304.	        # Преобразуем оставшуюся часть таблицы, заменяем базис, выводим результат  
+305.	  
+306.	        for index in range(1, len(self.SimplexTableau)):  
+307.	            if(index == indexOfResolvingString):  
+308.	                continue  
+309.	  
+310.	            multiplier = self.SimplexTableau[index][indexOfResolvingColumn] / self.SimplexTableau[indexOfResolvingString][indexOfResolvingColumn]  
+311.	            for element in range(1, len(self.SimplexTableau[index])):  
+312.	                self.SimplexTableau[index][element] -= self.SimplexTableau[indexOfResolvingString][element] * multiplier   
+313.	  
+314.	        self.SimplexTableau[indexOfResolvingString][0] = self.SimplexTableau[0][indexOfResolvingColumn]  
+315.	  
+316.	        self.printSimplexTableau()  
+317.	  
+318.	  
+319.	  
+320.	    # simplexAlgorithm - функция, описывающая весь алгоритм симплекс-метода  
+321.	  
+322.	    def simplexAlgorithm(self):  
+323.	  
+324.	        # Выводим исходную симплекс-таблицу  
+325.	  
+326.	        print("\n     Решим задачу с помощью симплекс-метода. Запишем исходную симплекс-таблицу:\n")  
+327.	        self.printSimplexTableau()  
+328.	  
+329.	        # Преобразуем таблицу, пока isBasic не вернет единицу, т.е. не будет найдено опорное решение  
+330.	  
+331.	        while not self.isBasic():  
+332.	            if(self.findResolvingColumn(0) == 0):  
+333.	                print("\n     На одном из этапов решения симплекс-таблица имеет следующий вид, что говорит об отсутствии решения задачи:\n")  
+334.	                self.printSimplexTableau()  
+335.	                return 0  
+336.	            resolvingElement = self.findResolvingElement(0)  
+337.	            self.tableConversion(resolvingElement)  
+338.	  
+339.	        # Преобразуем таблицу, пока isOptimal не вернет единицу, т.е. не будет найдено опорное решение  
+340.	  
+341.	        while not self.isOptimal():  
+342.	            resolvingElement = self.findResolvingElement(1)  
+343.	            self.tableConversion(resolvingElement)  
+344.	  
+345.	        # Если решения нет - функция выведет 0  
+346.	  
+347.	        for index in range(1, len(self.SimplexTableau) - 1):  
+348.	            if(self.SimplexTableau[index][self.numberOfVariables + 1] < 0):  
+349.	                print("     В столбце свободных членов присутствуют отрицательные значения. Следовательно, решения не существует.\n")  
+350.	                return 0  
+351.	  
+352.	        # Выводим результат работы алгоритма  
+353.	  
+354.	        print("\n     Конечная симплекс-таблица имеет вид:\n")  
+355.	        self.printSimplexTableau()  
+356.	  
+357.	        print("\n     Оптимальное решение:\n")  
+358.	        for index in range(1, self.numberOfBasicVariables + 2):  
+359.	            print("    ", self.SimplexTableau[index][0], " = ", round(self.SimplexTableau[index][self.numberOfVariables + 1], 2), "\n")  
+360.	  
+361.	        return 1
