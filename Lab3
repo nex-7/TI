@@ -1,0 +1,662 @@
+1.	class Simplex:      
+2.	    def __init__ (self, c, A, b, signsOfInequality):      
+3.	        self.c = c # Вектор правой части системы ограничений      
+4.	        self.A = A # Матрица системы ограничений      
+5.	        self.b = b # Вектор коэффициентов целевой функции F      
+6.	      
+7.	        self.x = ["x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9"] # Список, элементы которого будут использованы для вывода постановки ПЗ ЛП      
+8.	        self.other = ["-", "F", "b"]      
+9.	        self.basicVariables = ["x4", "x5", "x6", "x7", "x8", "x9"]       
+10.	        self.signsOfInequality = signsOfInequality # Список знаков неравенст      
+11.	      
+12.	        self.numberOfFreeVariables = len(self.c) # Количество свободных переменных      
+13.	        self.numberOfBasicVariables = len(self.A) # Количеество базисных переменных      
+14.	        self.numberOfVariables = self.numberOfFreeVariables + self.numberOfBasicVariables # Количество всех переменных      
+15.	      
+16.	        # Следующий блок кода инициализирует все строки симплекс-таблицы, которые позже будут добавлены в двумерный список, представляющий, собственно,       
+17.	        # всю симплекс-таблицу      
+18.	        #      
+19.	        # string - cписок, хранящий элементы самой верхней строки симплекс-таблицы. В вычислениях не участвует, используется для визуализации      
+20.	        # firstBasicVariable - список, хранящий элементы строки первой базисной переменной. Нулевой элемент этого списка используется для визуализации      
+21.	        # secondBasicVariable - -//- второй базисной переменной -//-      
+22.	        # thirdBasicVariable - -//- третьей базисной переменной -//-      
+23.	        # F - список, хранящий элементы последней строки симплек-таблицы      
+24.	      
+25.	        self.SimplexTableau = []      
+26.	      
+27.	        self.string = []      
+28.	        self.string.append(self.other[0])      
+29.	        for index in range (self.numberOfVariables):      
+30.	            self.string.append(self.x[index])      
+31.	        self.string.append(self.other[2])      
+32.	        self.SimplexTableau.append(self.string)      
+33.	      
+34.	        for i in range(self.numberOfBasicVariables):      
+35.	            self.basicVariable = []      
+36.	            self.basicVariable.append(self.basicVariables[i])      
+37.	            for j in range(self.numberOfFreeVariables):      
+38.	                self.basicVariable.append(A[i][j])      
+39.	            for element in range(self.numberOfBasicVariables):      
+40.	                if(element == i):      
+41.	                    self.basicVariable.append(1)      
+42.	                else:      
+43.	                    self.basicVariable.append(0)      
+44.	            self.basicVariable.append(self.b[i])      
+45.	            self.SimplexTableau.append(self.basicVariable)      
+46.	      
+47.	      
+48.	        self.F = []      
+49.	        self.F.append(self.other[1])      
+50.	        for index in self.c:      
+51.	            self.F.append(-index)      
+52.	        for index in range(self.numberOfBasicVariables + 1):      
+53.	            self.F.append(0)      
+54.	        self.SimplexTableau.append(self.F)      
+55.	      
+56.	      
+57.	    # printSimplexTableau - функция, выводящая симплекс таблицу       
+58.	    #      
+59.	    # Поскольку строки и числа выводятся по разным правилам, в обоих циклах мы проверяем, чему равен итератор  цикла. Если в родительском цикле итератор       
+60.	    # цикла равен нулю, это значит, что выводится первая строка симплекс-таблицы. Тип данных всех ее элементов - string, поэтому мы выводим их, как string,       
+61.	    # а затем переходим к следующей итерации родительского цикла       
+62.	    #      
+63.	    # Далее, если во вложенном цикле итератор равен нулю, это значит, что выводится первый элементы строки. Поскольку для всех строк первый элемент       
+64.	    # используется для визуализации и имеет тип данных string, мы выводим его, как string. Затем программа переходит к следующей итерации вложенного цикла,       
+65.	    # выводит все следующие элементы данной строки как числа, при этом округляя, а затем переходит к следующей итерации родительского цикла. И так далее,      
+66.	    # пока не будет выведена вся симплекс-таблица      
+67.	      
+68.	      
+69.	    def printSimplexTableau (self):       
+70.	        for index in range(len(self.SimplexTableau)):      
+71.	            if(index == 0):       
+72.	                for string in range(len(self.SimplexTableau[index])):      
+73.	                    print(("%7s" % (self.SimplexTableau[index][string])), end ="")      
+74.	                print("\n")      
+75.	                continue      
+76.	      
+77.	            for element in range(len(self.SimplexTableau[index])):      
+78.	                if(element == 0):      
+79.	                    print(("%7s" % (self.SimplexTableau[index][element])), end ="")      
+80.	                    continue      
+81.	                print(( "%7s" % round(self.SimplexTableau[index][element], 2)), end ="")      
+82.	            print("\n")      
+83.	      
+84.	      
+85.	      
+86.	    # printLinearProblem - функция, выводящая решаемую задачу      
+87.	      
+88.	    def printLinearProblem (self):      
+89.	      
+90.	        # Вывод постановки задачи      
+91.	      
+92.	        print("\n     F = ", end="")      
+93.	        for j in range (self.numberOfFreeVariables):      
+94.	            if(j == self.numberOfFreeVariables - 1):      
+95.	                print(self.c[j], "*", self.x[j], end="")      
+96.	                break      
+97.	            print(self.c[j], "*", self.x[j], end=" + ")      
+98.	        print(" -> max")      
+99.	      
+100.	        # Вывод системы ограничений      
+101.	      
+102.	        for i in range (self.numberOfBasicVariables):      
+103.	            print("     ", end="")      
+104.	            for j in range (self.numberOfFreeVariables - 1):      
+105.	                print(self.A[i][j], "*", self.x[j], "+", end=" ")      
+106.	            print(self.A[i][self.numberOfFreeVariables - 1], "*", self.x[self.numberOfFreeVariables - 1], self.signsOfInequality[i],self.b[i])      
+107.	              
+108.	        # Вывод системы ограничений с веденными фиктивными переменными      
+109.	      
+110.	        print("     ", end="")      
+111.	        for i in range(self.numberOfFreeVariables - 1):      
+112.	            print(self.x[i], end=", ")      
+113.	        print (self.x[self.numberOfFreeVariables - 1],">= 0 \n")      
+114.	      
+115.	        print("     Введем фиктивные переменные ", end="")      
+116.	        for index in range(self.numberOfBasicVariables - 1):      
+117.	            print(self.basicVariables[index], ",", end=" ")      
+118.	        print(self. basicVariables[self.numberOfBasicVariables - 1], ":\n")      
+119.	      
+120.	      
+121.	        print("     F = - ( - ", end="")      
+122.	        for j in range (self.numberOfFreeVariables):      
+123.	            if(j == self.numberOfFreeVariables - 1):      
+124.	                print(self.c[j], "*", self.x[j], end="")      
+125.	                break      
+126.	            print(self.c[j], "*", self.x[j], end=" - ")      
+127.	        print(") -> max")      
+128.	      
+129.	        for i in range (self.numberOfBasicVariables):      
+130.	            print("     ", end="")      
+131.	            for j in range (self.numberOfFreeVariables - 1):      
+132.	                print(self.A[i][j], "*", self.x[j], "+", end=" ")      
+133.	            if(self.signsOfInequality[i] == ">="):      
+134.	                print(self.A[i][self.numberOfFreeVariables - 1], "*", self.x[self.numberOfFreeVariables - 1], "- 1.0 *", self.basicVariables[i], "=", self.b[i])      
+135.	            else:      
+136.	                print(self.A[i][self.numberOfFreeVariables - 1], "*", self.x[self.numberOfFreeVariables - 1], "+ 1.0 *", self.basicVariables[i], "=", self.b[i])      
+137.	      
+138.	      
+139.	        print("     ", end="")      
+140.	        for i in range(self.numberOfVariables - 1):      
+141.	            print(self.x[i], end=", ")      
+142.	        print (self.x[self.numberOfVariables - 1], ">= 0 \n")      
+143.	      
+144.	      
+145.	        for i in range(1, self.numberOfBasicVariables + 1):      
+146.	            if(self.signsOfInequality[i - 1] == ">="):      
+147.	                for j in range(1, self.numberOfVariables + 2):      
+148.	                    if not (j == self.numberOfFreeVariables + i):      
+149.	                        self.SimplexTableau[i][j] *= -1      
+150.	      
+151.	      
+152.	      
+153.	    # bruteForce - реализация метода перебора      
+154.	    # Первый цикл итерирутся трижды, второй - дважды, а третий - шесть раз. Это было сделано из тех соображений, что исходя из системы ограничений первая переменная не       
+155.	    # может быть больше двух, вторая - не больше единицы а третья не больше пяти. Можно было бы создать метод, который бы это высчитывал, но мне показалось это      
+156.	    # пустой тратой времени, поэтому я просто вручную подставил значения для своего варианта      
+157.	      
+158.	    def bruteForce(self):      
+159.	        print("     Решим задачу методом перебора: \n")      
+160.	      
+161.	        self.solutions = []      
+162.	        self.valuesOfFunction = []      
+163.	      
+164.	        for i in range(3):      
+165.	            for j in range(2):      
+166.	                for k in range(6):      
+167.	                    x = [i, j, k]      
+168.	      
+169.	                    F = self.checking(x)      
+170.	                    if(F):      
+171.	                        self.solutions.append(x)      
+172.	      
+173.	                        value = 0      
+174.	                        for index in range(self.numberOfFreeVariables):      
+175.	                            value += self.c[index] * x[index]      
+176.	                        self.valuesOfFunction.append(value)      
+177.	      
+178.	                        print("     ", end="")      
+179.	                        for index in range(self.numberOfFreeVariables - 1):      
+180.	                            print(x[index], "*", self.c[index], "+", end=" ")      
+181.	                        print(x[self.numberOfFreeVariables - 1], "*", self.c[self.numberOfFreeVariables - 1], "=", value)      
+182.	      
+183.	        print("\n     Количество целочисленных решений:", len(self.solutions))      
+184.	      
+185.	        maximalValue = 0      
+186.	        indexOfMaximalValue = 0      
+187.	        for index in range(self.numberOfFreeVariables):      
+188.	            maximalValue += self.c[index] * self.solutions[0][index]      
+189.	      
+190.	        for index in range(len(self.solutions)):      
+191.	            if(self.valuesOfFunction[index] > maximalValue):      
+192.	                maximalValue = self.valuesOfFunction[index]      
+193.	                indexOfMaximalValue = index      
+194.	      
+195.	        print("\n     Найденное методом перебора решение:\n")      
+196.	        for index in range(self.numberOfFreeVariables):      
+197.	            print("    ", self.x[index], "=", self.solutions[indexOfMaximalValue][index],"\n")      
+198.	        print("    ",self.other[1], "=", maximalValue, "\n")      
+199.	      
+200.	      
+201.	      
+202.	    # checking - функция, возвращающая один, если вектор корней x удовлетворяет всем ограничениям, и ноль - если не удовлетворяет. Используется при проверке в методе       
+203.	    # перебором      
+204.	      
+205.	    def checking(self, x):      
+206.	        for i in range(self.numberOfBasicVariables):      
+207.	            value = 0      
+208.	            for j in range(self.numberOfFreeVariables):      
+209.	                value += self.A[i][j] * x[j]      
+210.	      
+211.	            if(self.signsOfInequality[i] == "<="):      
+212.	                if not (value <= self.b[i]):      
+213.	                    return 0      
+214.	      
+215.	            if(self.signsOfInequality[i] == ">="):      
+216.	                if not (value >= self.b[i]):      
+217.	                    return 0      
+218.	        return 1      
+219.	      
+220.	      
+221.	      
+222.	    # isBasic - функция, проверяющая, является ли решение, найденное на этом этапе, опорным. Если нет - функция возвращает нуль, иначе - единицу      
+223.	      
+224.	    def isBasic(self):      
+225.	        for index in range(1, len(self.SimplexTableau) - 1):      
+226.	            if(self.SimplexTableau[index][self.numberOfVariables + 1] < 0):      
+227.	                return 0      
+228.	        return 1      
+229.	      
+230.	      
+231.	      
+232.	    # isOptimal - функция, проверяющая, является ли решение, найденное на этом этапе, оптимальным. Если нет - функция возвращает нуль, иначе - единицу, после чего программа      
+233.	    # закончит свое выполнения      
+234.	      
+235.	    def isOptimal(self):      
+236.	        for index in range(1, len(self.SimplexTableau[4]) - 1):      
+237.	            if(self.SimplexTableau[self.numberOfBasicVariables + 1][index] < 0):      
+238.	                return 0      
+239.	        return 1      
+240.	      
+241.	      
+242.	      
+243.	    # findResolvingColumn - функция нахождения разрешающего столбца. flag - переменная, указывающая, для чего мы ищем разрешающий элемент - для нахождения опорного (в       
+244.	    # случае, когда функция была вызвана с аругментом, равным нулю) или оптимального решения ( --//--, равным единице). В зависимости от этого алгоритмы нахождения      
+245.	    # разрешающего столбца будут разными      
+246.	      
+247.	    def findResolvingColumn (self, flag):      
+248.	      
+249.	        if(flag == 0):      
+250.	      
+251.	            # Проходимся по столбцу свободных членов симплекс-таблицы и добавляем все отрицательные элементы в список listOfIndices      
+252.	      
+253.	            listOfIndices = []       
+254.	            for index in range(1, len(self.SimplexTableau) - 1):      
+255.	                if (self.SimplexTableau[index][self.numberOfVariables + 1] < 0):      
+256.	                    listOfIndices.append(index);      
+257.	      
+258.	            # Далее зададим начальное значение минимального элемента равным нулю, а индекс - единице      
+259.	      
+260.	            minimalElement = 0      
+261.	            indexOfString = 1      
+262.	      
+263.	            # Проходим по списку listOfIndices и находим минимальный элемент      
+264.	                  
+265.	            for index in listOfIndices:       
+266.	                if (self.SimplexTableau[index][self.numberOfVariables + 1] < minimalElement):      
+267.	                    minimalElement = self.SimplexTableau[index][self.numberOfVariables + 1]      
+268.	                    indexOfString = index      
+269.	      
+270.	            indexOfResolvingColumn = 0      
+271.	      
+272.	            # Проходим по строке с индексом indexOfString и ищем первый отрицательный элемент. Столбец, в котором находится этот элемент и будет разрешающим      
+273.	      
+274.	            for index in range(1, len(self.SimplexTableau[indexOfString]) - 1):      
+275.	                if(self.SimplexTableau[indexOfString][index] < 0):      
+276.	                    indexOfResolvingColumn = index      
+277.	                    break      
+278.	            #Возвращаем индекс разрешающего столбца      
+279.	      
+280.	            return indexOfResolvingColumn       
+281.	      
+282.	        if(flag == 1):      
+283.	      
+284.	        # Проходимся по последней строке симплекс-таблицы и добавляем все отрицательные элементы в список listOfIndices      
+285.	      
+286.	            listOfIndices = []       
+287.	            for index in range(1, len(self.SimplexTableau[self.numberOfBasicVariables]) - 1):      
+288.	                if (self.SimplexTableau[self.numberOfBasicVariables + 1][index] < 0):       
+289.	                    listOfIndices.append(index);      
+290.	      
+291.	            # Далее зададим начальное значение минимального элемента равным нулю, а индекс - единице      
+292.	      
+293.	            minimalElement = 0      
+294.	            indexOfResolvingColumn = 1      
+295.	      
+296.	            # Проходим по списку listOfIndices и находим максимальный элемент      
+297.	                  
+298.	            for index in listOfIndices:       
+299.	                if (self.SimplexTableau[self.numberOfBasicVariables + 1][index] < minimalElement):      
+300.	                    minimalElement = self.SimplexTableau[self.numberOfBasicVariables + 1][index]      
+301.	                    indexOfResolvingColumn = index      
+302.	      
+303.	            # Возвращаем индекс разрешающего столбца      
+304.	      
+305.	            return indexOfResolvingColumn       
+306.	              
+307.	      
+308.	      
+309.	    # findResolvingString - функция нахождения разрешающей строки, использующая найденный ранее разрешающий столбец      
+310.	      
+311.	    def findResolvingString (self, indexOfResolvingColumn):      
+312.	      
+313.	        # listOfIndices - список, в который мы положим индексы тех строк, значения элементов разрешающего столбца которых не равны нулю. Это нужно для того,       
+314.	        # чтобы избежать деления на ноль       
+315.	        #      
+316.	        # listOfValues - список,в который мы положим значения b/a для каждой строки, где a - элемент разрешающего столбца, а b - элемент столбца свободных       
+317.	        # членов      
+318.	      
+319.	        listOfIndices = []      
+320.	        listOfValues = []      
+321.	      
+322.	        # Заполняем списки listOfIndices и listOfValues       
+323.	      
+324.	        for index in range(1, len(self.SimplexTableau) - 1):      
+325.	            if (self.SimplexTableau[index][indexOfResolvingColumn] != 0):       
+326.	                listOfIndices.append(index)      
+327.	      
+328.	        for index in listOfIndices:      
+329.	            value = self.SimplexTableau[index][self.numberOfVariables + 1] / self.SimplexTableau[index][indexOfResolvingColumn]      
+330.	            if(value >= 0):      
+331.	                listOfValues.append(value)      
+332.	      
+333.	        # В данном блоке найдем начальное минимальное значение частного b/a. Для этого пробежимся по всем строкам, и как только частное в какой-то строке       
+334.	        # будет положительным - запишем его в минимальное значение, а затем выйдем из цикла      
+335.	      
+336.	        for index in listOfIndices:      
+337.	            currentValue = self.SimplexTableau[index][self.numberOfVariables + 1] / self.SimplexTableau[index][indexOfResolvingColumn]      
+338.	            if (currentValue >= 0):      
+339.	                minimalValue = currentValue      
+340.	                break      
+341.	      
+342.	        # Находим минимальное положительное из всех частных, а также записываем его индекс - этот индекс и будет индексом разрешающей строки      
+343.	      
+344.	        for index in listOfIndices:       
+345.	            currentValue = self.SimplexTableau[index][self.numberOfVariables + 1] / self.SimplexTableau[index][indexOfResolvingColumn]      
+346.	            if ( (currentValue <= minimalValue) & (currentValue >= 0)):      
+347.	                minimalValue = currentValue       
+348.	                indexOfResolvingString = index      
+349.	      
+350.	        # Возвращаем индекс разрешающей строки      
+351.	      
+352.	        return indexOfResolvingString      
+353.	      
+354.	      
+355.	      
+356.	    # findResolvingElement - функция нахождения разрешающего элемента. flag - переменная, указывающая, для чего мы ищем разрешающий элемент - для нахождения опорного или       
+357.	    # оптимального решения. Поскольку от этого зависит только нахождение разрешающего столбца, с аргументом flag вызывается только функция findResolvingColumn      
+358.	      
+359.	    def findResolvingElement(self, flag):      
+360.	        resolvingColumn = self.findResolvingColumn(flag)      
+361.	        resolvingString = self.findResolvingString(resolvingColumn)      
+362.	      
+363.	        return [resolvingString, resolvingColumn]      
+364.	      
+365.	      
+366.	      
+367.	    # tableConversion - функция преобразования симплекс-таблицы      
+368.	      
+369.	    def tableConversion(self, resolvingElement):      
+370.	        indexOfResolvingString = resolvingElement[0]      
+371.	        indexOfResolvingColumn = resolvingElement[1]      
+372.	              
+373.	        # Преобразуем разрешающую строку, выводим результат      
+374.	      
+375.	        denominator = self.SimplexTableau[indexOfResolvingString][indexOfResolvingColumn]      
+376.	        for index in range(1, len(self.SimplexTableau[indexOfResolvingString])):      
+377.	            self.SimplexTableau[indexOfResolvingString][index] /= denominator      
+378.	      
+379.	        # Преобразуем оставшуюся часть таблицы, заменяем базис, выводим результат      
+380.	      
+381.	        for index in range(1, len(self.SimplexTableau)):      
+382.	            if(index == indexOfResolvingString):      
+383.	                continue      
+384.	      
+385.	            multiplier = self.SimplexTableau[index][indexOfResolvingColumn] / self.SimplexTableau[indexOfResolvingString][indexOfResolvingColumn]      
+386.	            for element in range(1, len(self.SimplexTableau[index])):      
+387.	                self.SimplexTableau[index][element] -= self.SimplexTableau[indexOfResolvingString][element] * multiplier       
+388.	      
+389.	        self.SimplexTableau[indexOfResolvingString][0] = self.SimplexTableau[0][indexOfResolvingColumn]      
+390.	      
+391.	        # self.printSimplexTableau()      
+392.	        # print("\n")      
+393.	      
+394.	      
+395.	      
+396.	    # simplexAlgorithm - функция, описывающая весь алгоритм симплекс-метода      
+397.	      
+398.	    def simplexAlgorithm(self):      
+399.	      
+400.	        # Выводим исходную симплекс-таблицу      
+401.	      
+402.	        print("\n     Решим задачу с помощью симплекс-метода. Запишем исходную симплекс-таблицу:\n")      
+403.	        self.printSimplexTableau()      
+404.	      
+405.	        # Преобразуем таблицу, пока isBasic не вернет единицу, т.е. не будет найдено опорное решение      
+406.	      
+407.	        while not self.isBasic():      
+408.	            if(self.findResolvingColumn(0) == 0):      
+409.	                print("\n     На одном из этапов решения симплекс-таблица имеет следующий вид, что говорит об отсутствии решения задачи:\n")      
+410.	                self.printSimplexTableau()      
+411.	                return 0      
+412.	            resolvingElement = self.findResolvingElement(0)      
+413.	            self.tableConversion(resolvingElement)      
+414.	      
+415.	        # Преобразуем таблицу, пока isOptimal не вернет единицу, т.е. не будет найдено опорное решение      
+416.	      
+417.	        while not self.isOptimal():      
+418.	            resolvingElement = self.findResolvingElement(1)      
+419.	            self.tableConversion(resolvingElement)      
+420.	      
+421.	        # Если решения нет - функция выведет 0      
+422.	      
+423.	        for index in range(1, len(self.SimplexTableau) - 1):      
+424.	            if(self.SimplexTableau[index][self.numberOfVariables + 1] < 0):      
+425.	                print("     В столбце свободных членов присутствуют отрицательные значения. Следовательно, решения не существует.\n")      
+426.	                return 0      
+427.	      
+428.	        # Выводим результат работы алгоритма      
+429.	      
+430.	        print("\n     Конечная симплекс-таблица имеет вид:\n")      
+431.	        self.printSimplexTableau()      
+432.	      
+433.	        print("\n     Оптимальное решение:\n")      
+434.	        for index in range(1, self.numberOfBasicVariables + 2):      
+435.	            print("    ", self.SimplexTableau[index][0], " = ", round(self.SimplexTableau[index][self.numberOfVariables + 1], 2), "\n")      
+436.	      
+437.	        return 1      
+438.	      
+439.	          
+440.	      
+441.	      
+442.	      
+443.	      
+444.	      
+445.	      
+446.	# IntegerLinearProgramming - класс задачи ЦЛП      
+447.	      
+448.	class IntegerLinearProgramming:      
+449.	    def __init__(self, c, A, b, signsOfInequality):      
+450.	        self.c = c       
+451.	        self.A = A       
+452.	        self.b = b       
+453.	        self.signsOfInequality = signsOfInequality      
+454.	        task = Simplex(c, A, b, signsOfInequality)      
+455.	        self.indexOfBranchVariable = 0 # Индекс переменной ветвления      
+456.	      
+457.	      
+458.	    # checking - функция, проверяющая, является ли найденное на данном этапе решение целочисленным. Если да - вернет ноль, в противном случае вернет индекс строки       
+459.	    # переменной, ветвление которой надо осуществить      
+460.	      
+461.	    def checking(self, task):      
+462.	        listOfFreeVariablesIndices = []      
+463.	        for index in range(1, task.numberOfBasicVariables + 1):      
+464.	            if((task.SimplexTableau[index][0] == task.x[index - 1])):      
+465.	                listOfFreeVariablesIndices.append(index)      
+466.	      
+467.	        self.indexOfBranchVariableString = 0      
+468.	      
+469.	        for index in listOfFreeVariablesIndices:      
+470.	            fraction = task.SimplexTableau[index][task.numberOfVariables + 1] - int(task.SimplexTableau[index][task.numberOfVariables + 1])      
+471.	            if(fraction != 0):      
+472.	                print("     Произведем ветвление по переменной", task.SimplexTableau[index][0], ". Для этого добавим новое ограничение: \n")      
+473.	                self.indexOfBranchVariableString = index      
+474.	      
+475.	                if(task.SimplexTableau[index][0] == "x1"):      
+476.	                    self.indexOfBranchVariable = 1      
+477.	                    break      
+478.	                if(task.SimplexTableau[index][0] == "x2"):      
+479.	                    self.indexOfBranchVariable = 2      
+480.	                    break      
+481.	                if(task.SimplexTableau[index][0] == "x3"):      
+482.	                    self.indexOfBranchVariable = 3      
+483.	                    break      
+484.	      
+485.	        return self.indexOfBranchVariableString      
+486.	      
+487.	    # addingListToA - функция, добавляющая новую строки в матрицу ограничений при добавлении нового ограничения в задачу      
+488.	      
+489.	    def addingListToA(self, indexOfBranchVariable):      
+490.	        listOfLastString = []      
+491.	        for index in range(len(self.c)):      
+492.	            if(index == self.indexOfBranchVariable - 1):      
+493.	                listOfLastString.append(1)      
+494.	            else:      
+495.	                listOfLastString.append(0)      
+496.	        self.A.append(listOfLastString)      
+497.	      
+498.	    # addingElementToB - функция, добавляющая новый элемент в вектор правой части системы ограничений, а также в вектор знаков неравенств      
+499.	    # Параметр i указывает, какой именно знак у нового ограничения      
+500.	      
+501.	    def addingElementToB(self, i, task):      
+502.	        if(i == 0):      
+503.	            self.b.append(int(task.SimplexTableau[self.indexOfBranchVariableString][task.numberOfVariables + 1]))      
+504.	            self.signsOfInequality.append("<=")      
+505.	            print("     ", task.SimplexTableau[self.indexOfBranchVariableString][0], "<=", self.b[len(self.b) - 1], "\n")      
+506.	        else:      
+507.	            self.b.append(int(task.SimplexTableau[self.indexOfBranchVariableString][task.numberOfVariables + 1]) + 1)      
+508.	            self.signsOfInequality.append(">=")      
+509.	            print("     ", task.SimplexTableau[self.indexOfBranchVariableString][0], ">=", self.b[len(self.b) - 1], "\n")      
+510.	      
+511.	      
+512.	    # delete - функция, удаляющая последнюю строку матрицы A, а также последние элементы вектора правой части системы ограничений и вектора знаков неравенств. Это       
+513.	    # используется в алгоритме метода ветвей и границ, когда необходимо в процессе ветвления удалить последнее добавленное ограничение и добавить новое       
+514.	      
+515.	    def delete(self):      
+516.	        A.pop()      
+517.	        b.pop()      
+518.	        signsOfInequality.pop()      
+519.	      
+520.	    # findAndPrintOptimalSolution - функция, принимающая в качестве аргумента список со всеми целочисленными решениями, находит из них оптимальное, и выводит результат      
+521.	      
+522.	    def findAndPrintOptimalSolution(self, integerSolutions):      
+523.	        maximalValueOfFunction = 0      
+524.	        indexOfOptimalSolution = 0      
+525.	        for index in range(len(integerSolutions)):      
+526.	            if( integerSolutions[index][3] > maximalValueOfFunction):      
+527.	                indexOfOptimalSolution = index      
+528.	      
+529.	        x = ["x1", "x2", "x3", "F"]      
+530.	      
+531.	        for index in range(4):      
+532.	            print("\n    ", x[index], "=", integerSolutions[indexOfOptimalSolution][index])      
+533.	                  
+534.	    # getIntegerSolution - функция, получающая из симплекс-таблицы целочисленное решение. Возвращает список, первым значением которого является коэффициент при x1,      
+535.	    # вторым - коэффициент при x2, третьим - коэффициент при x3, а последним - значение функции при данных корнях. Необходима, когда нужно будет из всех решений найти      
+536.	    # оптимальное, а также при удобном выводе этого оптимального решения      
+537.	      
+538.	    def getIntegerSolution(self, task):      
+539.	        integerSolution = []      
+540.	        for i in range(3):      
+541.	            for j in range(1, task.numberOfBasicVariables + 1):      
+542.	                    if(task.SimplexTableau[j][0] == task.x[i]):      
+543.	                        integerSolution.append(task.SimplexTableau[j][task.numberOfVariables + 1])      
+544.	                        break      
+545.	        integerSolution.append(task.SimplexTableau[task.numberOfBasicVariables + 1][task.numberOfVariables + 1])      
+546.	      
+547.	        return integerSolution      
+548.	      
+549.	      
+550.	    def branchAndBoundAlgorithm(self):      
+551.	      
+552.	        # integerSolutions - список, в который будут добавляться в течение работы алгоритма все целочисленные решения, а в конце алгоритма с помощью этого списка из всех      
+553.	        # решений будет найдено оптимальное      
+554.	      
+555.	        integerSolutions = []       
+556.	      
+557.	        # Решение исходной задачи методом перебора, а также с помощью симплекс-метода      
+558.	      
+559.	        initialTask = Simplex(self.c, self.A, self.b, self.signsOfInequality)      
+560.	        initialTask.printLinearProblem()      
+561.	        initialTask.bruteForce()      
+562.	        initialTask.simplexAlgorithm()      
+563.	      
+564.	      
+565.	        for i in range(2):      
+566.	      
+567.	            # Проверяем, является ли решение задачи не данном этапе целочисленным. Если да - выходим из цикла - то есть заканчиваем ветвление, а также добавляем данное      
+568.	            # целочисленное решение в список всех целочисленных решений. Если нет - получаем индекс строки переменной, ветвление которой нужно осуществить      
+569.	      
+570.	            indexOfBranchVariableString = self.checking(initialTask)      
+571.	            if not(indexOfBranchVariableString):      
+572.	                print("\n     Целочисленное решение найдено!\n")      
+573.	                integerSolution = self.getIntegerSolution(initialTask)      
+574.	                integerSolutions.append(integerSolution)      
+575.	                break      
+576.	      
+577.	            # Добавляем новые ограничения в начальные условия      
+578.	      
+579.	            self.addingListToA(self.indexOfBranchVariable)      
+580.	            self.addingElementToB(i, initialTask)      
+581.	      
+582.	            # Решаем новую задачу с помощью симплекс-метода. Если решения нет - удаляем все добавленные на данном этапе новые ограничения и переходим к следующей итерации       
+583.	            # ветвления       
+584.	      
+585.	            print("     Тогда задача будет иметь вид:")      
+586.	      
+587.	            firstStepTask = Simplex(c, A, b, signsOfInequality)      
+588.	            firstStepTask.printLinearProblem()      
+589.	            if not(firstStepTask.simplexAlgorithm()):      
+590.	                self.delete()      
+591.	                continue      
+592.	      
+593.	            # Далее алгоритм производит ветвление и работает так же, как и на этом этапе. Всего алгоритм имеет три цикла, каждый следующий цикл вложен в предыдущий. Это      
+594.	            # связано с тем, что в исходной функции всего три переменных - таким образом максимальная высота дерева в решении данной задачи будет равна трем      
+595.	      
+596.	            for j in range(2):      
+597.	                indexOfBranchVariableStringFirstStep = self.checking(firstStepTask)      
+598.	      
+599.	                if not(indexOfBranchVariableStringFirstStep):      
+600.	                    print("\n     Целочисленное решение найдено!\n")      
+601.	                    integerSolution = self.getIntegerSolution(firstStepTask)      
+602.	                    integerSolutions.append(integerSolution)      
+603.	                    break      
+604.	      
+605.	                self.addingListToA(self.indexOfBranchVariable)      
+606.	                self.addingElementToB(j, firstStepTask)      
+607.	      
+608.	                print("     Тогда задача будет иметь вид:")      
+609.	      
+610.	                secondStepTask = Simplex(c, A, b, signsOfInequality)      
+611.	                secondStepTask.printLinearProblem()      
+612.	                if not(secondStepTask.simplexAlgorithm()):      
+613.	                    self.delete()      
+614.	                    continue      
+615.	      
+616.	                for k in range(2):      
+617.	                    indexOfBranchVariableStringSecondStep = self.checking(secondStepTask)      
+618.	      
+619.	                    if not(indexOfBranchVariableStringSecondStep):      
+620.	                        print("\n     Целочисленное решение найдено!\n")      
+621.	                        integerSolution = self.getIntegerSolution(secondStepTask)      
+622.	                        integerSolutions.append(integerSolution)      
+623.	                        break      
+624.	      
+625.	                    self.addingListToA(self.indexOfBranchVariable)      
+626.	                    self.addingElementToB(j, secondStepTask)      
+627.	      
+628.	                    print("     Тогда задача будет иметь вид:")      
+629.	      
+630.	                    thirdStepTask = Simplex(c, A, b, signsOfInequality)      
+631.	                    thirdStepTask.printLinearProblem()      
+632.	                    if not(task3.simplexAlgorithm()):      
+633.	                        self.delete()      
+634.	                        continue      
+635.	      
+636.	                    self.delete()      
+637.	      
+638.	                self.delete()      
+639.	      
+640.	            self.delete()      
+641.	      
+642.	        # Из всех целочисленных решений находим оптимальное       
+643.	      
+644.	        print("\n     Методом ветвей и границ найдено следующее целочисленное решение:")      
+645.	        self.findAndPrintOptimalSolution(integerSolutions)      
+646.	      
+647.	      
+648.	      
+649.	      
+650.	      
+651.	signsOfInequality = ["<=", "<=", "<="]      
+652.	      
+653.	c = [5, 6, 1]      
+654.	      
+655.	A = [[2, 1, 1]      
+656.	    ,[1, 2, 0]      
+657.	    ,[0, 0.5, 1]]      
+658.	      
+659.	b = [5, 3, 8]      
+660.	      
+661.	myTask = IntegerLinearProgramming(c, A, b, signsOfInequality)      
+662.	myTask.branchAndBoundAlgorithm()
